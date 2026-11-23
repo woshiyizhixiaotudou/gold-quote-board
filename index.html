@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23252b32'/%3E%3Crect x='14' y='16' width='36' height='8' rx='4' fill='%23ffbf24'/%3E%3Crect x='14' y='30' width='26' height='7' rx='3.5' fill='%23ffbf24'/%3E%3Crect x='14' y='43' width='16' height='6' rx='3' fill='%23ff0000'/%3E%3C/svg%3E" />
+<title>贵金属行情牌价</title>
+<style>
+  :root{
+    --bg:#252525; --row-alt:#000; --text:#eee; --gold:#ffbf24;
+    --red:#ff0000; --green:#00ff00; --line:#444;
+    --footer:#2b3036; --cta:#2ba7f0;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    margin:0;background:#000;color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Segoe UI",Arial,Roboto,"PingFang SC","Hiragino Sans GB","Microsoft Yahei",sans-serif;
+    font-size:14px;-webkit-font-smoothing:antialiased;
+  }
+  #app{
+    position:relative;display:flex;flex-direction:column;
+    width:100%;max-width:760px;margin:0 auto;height:100%;overflow:hidden;
+    background:var(--bg);
+  }
+
+  /* ---------- header ---------- */
+  .quote-header{position:relative;display:flex;align-items:flex-start;justify-content:space-between;
+    padding:13px 10px 10px;flex:0 0 auto;height:88px;box-sizing:border-box;border-bottom:1px solid #414141}
+  .logo-slot{width:180px;height:52px;display:flex;align-items:center;justify-content:flex-start;gap:8px;overflow:hidden}
+  .logo-slot img{max-width:180px;max-height:52px;object-fit:contain}
+  .logo-text{font-size:26px;font-weight:700;letter-spacing:2px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .logo-empty{width:180px;height:52px;border:1px dashed #6a6a6a;border-radius:6px;display:flex;
+    align-items:center;justify-content:center;color:#8d8d8d;font-size:14px;letter-spacing:2px}
+  .qr-code{position:absolute;top:10px;right:10px;display:flex;gap:8px;height:73px}
+  .qr-item{display:flex;flex-direction:column;align-items:center;height:73px;flex:0 0 auto}
+  .qr-item img{height:73px;width:auto;display:block;border-radius:2px;background:#fff}
+  .qr-item.cap img{height:58px}
+  .qr-item .qr-cap{font-size:9px;line-height:1.2;color:#bbb;max-width:73px;text-align:center;
+    margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .qr-ph{height:73px;width:73px;border:1px dashed #6a6a6a;border-radius:6px;display:flex;align-items:center;
+    justify-content:center;color:#8d8d8d;font-size:12px;text-align:center;line-height:1.3;flex:0 0 auto}
+  .qr-item.cap .qr-ph{height:58px;width:58px;font-size:11px}
+
+  /* ---------- status / cta / marquee ---------- */
+  .statusline{display:flex;justify-content:flex-end;align-items:center;gap:6px;flex:0 0 auto;
+    padding:0 10px 6px;font-size:15px;color:var(--red);font-variant-numeric:tabular-nums}
+  .statusline .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
+  .statusline .dot.off{background:#888;box-shadow:none}
+  .cta-wrap{display:flex;justify-content:center;align-items:center;position:relative;padding:2px 34px 6px;flex:0 0 auto}
+  .cta-close{position:absolute;right:44px;top:50%;transform:translateY(-55%);font-size:17px;color:#8b8b8b;
+    cursor:pointer;padding:4px 6px;line-height:1}
+  .cta{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 22px;border-radius:20px;
+    background:var(--cta);color:#fff;font-size:15px;text-decoration:none;box-shadow:0 2px 10px rgba(43,167,240,.35)}
+  .cta:active{filter:brightness(.92)}
+  .marquee{position:relative;height:24px;flex:0 0 24px;overflow:hidden;background:transparent;margin:0 0 2px}
+  .marquee-text{position:absolute;top:4px;left:0;white-space:nowrap;font-size:13px;color:#cfcfcf;
+    animation:marq 22s linear infinite;padding-left:100%}
+  @keyframes marq{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
+  .marquee-text.no-anim{animation:none;padding-left:10px}
+
+  /* ---------- table ---------- */
+  .table-head{flex:0 0 auto;display:grid;grid-template-columns:8fr 6fr 6fr 6fr;align-items:center;
+    height:47px;font-size:21px;font-weight:700;color:#fff;text-align:center}
+  .content{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;scrollbar-color:#3a3a3a transparent}
+  .content::-webkit-scrollbar{width:3px}
+  .content::-webkit-scrollbar-thumb{background:#3a3a3a;border-radius:2px}
+  .quote-table{font-size:21px;color:var(--text);min-height:200px}
+  .row{display:grid;grid-template-columns:8fr 6fr 6fr 6fr;align-items:center;height:52px;text-align:center}
+  .row:nth-child(odd){background:transparent}
+  .row:nth-child(even){background:var(--row-alt)}
+  .name{font-family:"Microsoft YaHei",Arial,Helvetica,sans-serif;font-size:20px;color:var(--gold);
+    margin-left:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .price{font-size:19px;font-family:Bahnschrift,"DIN Alternate","Segoe UI",sans-serif;
+    font-variant-numeric:tabular-nums;letter-spacing:.2px}
+  .price.rise{color:var(--red)}
+  .price.fall{color:var(--green)}
+  .price.normal{color:#e8e8e8}
+  .price.dim{color:#8a8a8a}
+  .hl{display:flex;flex-direction:column;justify-content:center;line-height:23px}
+  .hl .price{font-family:Bahnschrift,"DIN Alternate","Segoe UI",sans-serif}
+  .rawline{display:block;font-size:11px;line-height:12px;color:#6f6f6f;font-variant-numeric:tabular-nums}
+
+  /* ---------- memo / footer ---------- */
+  .memo{padding:10px 10px 0;font-size:12px;line-height:1.6;color:#a9a9a9;flex:0 0 auto}
+  .memo .warn{color:#ff5555}
+  .footer{flex:0 0 auto;height:85px;background:var(--footer);display:flex;align-items:center;
+    justify-content:space-around;padding-bottom:env(safe-area-inset-bottom)}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;color:#cfd8dc;cursor:pointer}
+  .tab.active{color:#29b6f6}
+  .tab svg{width:22px;height:22px;fill:currentColor}
+
+  /* ---------- floating buttons ---------- */
+  .float-btn{position:absolute;right:14px;bottom:100px;width:50px;height:50px;border-radius:50%;
+    background:#fff;display:flex;align-items:center;justify-content:center;border:none;
+    box-shadow:0 3px 10px rgba(0,0,0,.5);cursor:pointer;z-index:120}
+  .float-btn svg{width:28px;height:28px;fill:#333}
+  .set-btn{position:absolute;left:14px;bottom:100px;width:44px;height:44px;border-radius:50%;
+    background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);color:#fff;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:120}
+  .set-btn svg{width:22px;height:22px;fill:#fff}
+
+  .hint{position:absolute;left:50%;transform:translateX(-50%);bottom:150px;background:rgba(0,0,0,.82);
+    color:#fff;font-size:12px;padding:8px 14px;border-radius:16px;max-width:88%;text-align:center;
+    line-height:1.5;z-index:150;transition:opacity .4s;pointer-events:none}
+  .hint.hide{opacity:0}
+
+  /* ---------- drawer ---------- */
+  .mask{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:800;opacity:0;pointer-events:none;transition:opacity .2s}
+  .mask.show{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:min(460px,96vw);background:#1b1b1b;color:#ddd;
+    z-index:810;transform:translateX(102%);transition:transform .25s ease;display:flex;flex-direction:column;
+    box-shadow:-6px 0 24px rgba(0,0,0,.6)}
+  .drawer.show{transform:translateX(0)}
+  .drawer-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;
+    background:#111;border-bottom:1px solid #2c2c2c;flex:0 0 auto}
+  .drawer-head b{font-size:16px;color:#fff}
+  .drawer-head .x{background:none;border:none;color:#aaa;font-size:22px;cursor:pointer;line-height:1}
+  .tabs{display:flex;gap:6px;padding:10px 12px;flex:0 0 auto;background:#161616}
+  .tabs button{flex:1;padding:8px 4px;border-radius:8px;border:1px solid #333;background:#222;color:#bbb;font-size:13px;cursor:pointer}
+  .tabs button.on{background:var(--cta);border-color:var(--cta);color:#fff}
+  .pane{display:none;overflow-y:auto;padding:12px 14px 90px;flex:1 1 auto}
+  .pane.on{display:block}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:12px;color:#9a9a9a;margin-bottom:5px}
+  .field input[type=text],.field input[type=number],.field select,.field textarea{
+    width:100%;background:#111;border:1px solid #333;border-radius:8px;color:#eee;padding:8px 10px;
+    font-size:13px;outline:none;font-family:inherit}
+  .field textarea{resize:vertical;min-height:60px;line-height:1.5}
+  .row2{display:flex;gap:10px}
+  .row2>*{flex:1}
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap}
+  .btn{padding:9px 12px;border-radius:8px;border:1px solid #3a3a3a;background:#262626;color:#ddd;
+    font-size:13px;cursor:pointer;font-family:inherit}
+  .btn.pri{background:var(--cta);border-color:var(--cta);color:#fff}
+  .btn.danger{background:#3a1f1f;border-color:#5a2a2a;color:#ff9a9a}
+  .thumb{height:60px;border:1px dashed #444;border-radius:8px;display:flex;align-items:center;
+    justify-content:center;color:#777;font-size:12px;overflow:hidden;background:#141414;margin-bottom:6px}
+  .thumb img{height:100%;object-fit:contain}
+  .switch{display:flex;align-items:center;gap:8px;font-size:13px;color:#ccc;margin:8px 0}
+  .switch input{width:16px;height:16px;accent-color:var(--cta)}
+
+  .adjtable{width:100%;border-collapse:collapse;font-size:12px}
+  .adjtable th{position:sticky;top:0;background:#161616;color:#8f8f8f;font-weight:400;
+    padding:6px 4px;text-align:center;border-bottom:1px solid #2c2c2c;z-index:2}
+  .adjtable td{padding:4px;border-bottom:1px solid #232323;vertical-align:top}
+  .adjtable .nm input{width:100%;background:transparent;border:1px solid #2e2e2e;border-radius:5px;
+    color:var(--gold);font-size:12px;padding:5px 4px;text-align:center;font-family:inherit}
+  .adjtable .cell select,.adjtable .cell input{width:100%;background:#111;border:1px solid #303030;
+    border-radius:5px;color:#ddd;font-size:11px;padding:4px 2px;text-align:center;margin-bottom:3px;font-family:inherit}
+  .adjtable .cell input[type=number]{font-variant-numeric:tabular-nums}
+  .adjtable .hidecol{text-align:center;width:42px}
+  .adjtable th:nth-child(6){width:42px;white-space:nowrap;padding:6px 0}
+  .adjtable th:nth-child(1){width:86px}
+  .adjtable input[type=checkbox]{width:15px;height:15px;accent-color:var(--cta)}
+  .legend{font-size:11px;color:#7c7c7c;line-height:1.6;margin:8px 0 14px}
+
+  /* ---------- 手机窄屏适配 ---------- */
+  @media (max-width:430px){
+    .quote-header{height:74px;padding:9px 8px 6px}
+    .logo-slot{width:132px;height:40px}
+    .logo-slot img{max-width:132px;max-height:40px}
+    .logo-empty{width:132px;height:40px;font-size:12px;letter-spacing:1px}
+    .logo-text{font-size:20px}
+    .qr-code{top:8px;right:8px;height:58px;gap:6px}
+    .qr-item{height:58px}
+    .qr-item img{height:58px}
+    .qr-item.cap img{height:46px}
+    .qr-ph{width:58px;height:58px;font-size:10px;border-radius:5px}
+    .qr-item.cap .qr-ph{width:46px;height:46px}
+    .qr-item .qr-cap{font-size:8px;max-width:58px}
+    .statusline{font-size:13px;padding:0 8px 4px}
+    .cta-wrap{padding:2px 30px 4px}
+    .cta{min-height:34px;font-size:13px;padding:0 16px;border-radius:17px}
+    .cta-close{right:26px;font-size:15px}
+    .marquee{height:22px;flex:0 0 22px}
+    .marquee-text{font-size:12px;top:4px}
+    .table-head{height:38px;font-size:16px}
+    .row{height:44px}
+    .row .name{font-size:16px;margin-left:4px}
+    .row .price{font-size:15px}
+    .row .hl .price{line-height:1.15}
+    .footer{height:64px}
+    .footer .tab{font-size:11px}
+    .footer .tab svg{width:19px;height:19px}
+    .float-btn{width:44px;height:44px;right:10px;bottom:76px}
+    .set-btn{width:36px;height:36px;left:8px;bottom:76px}
+    .drawer{width:100%}
+    .memo{font-size:11px;padding:6px 8px 8px}
+  }
+
+  .legend{font-size:11px;color:#7c7c7c;line-height:1.6;margin:8px 0 14px}
+  .unirow{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:8px}
+  .unirow .cell select,.unirow .cell input{width:100%;background:#111;border:1px solid #303030;border-radius:5px;
+    color:#ddd;font-size:11px;padding:4px 2px;text-align:center;margin-bottom:3px;font-family:inherit}
+  .unirow .cell>span{display:block;font-size:11px;color:#8f8f8f;text-align:center;margin-bottom:3px}
+
+  /* qr dialog */
+  .qrdialog{position:fixed;inset:0;z-index:850;display:none;align-items:center;justify-content:center;
+    background:rgba(0,0,0,.75);padding:20px}
+  .qrdialog.show{display:flex}
+  .qrdialog .inner{background:#141414;border-radius:12px;padding:14px;max-width:420px;width:100%}
+  .qrdialog img{width:100%;max-height:300px;object-fit:contain;display:block}
+  .qrdialog .ph{padding:40px 0;text-align:center;color:#888;border:1px dashed #444;border-radius:8px}
+  .qrdialog .cap{text-align:center;color:#aaa;font-size:13px;margin-top:10px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="quote-header">
+    <div class="logo-slot" id="logoSslot" title="点击可更换 LOGO">
+      <div class="logo-empty" id="logoEmpty">我的 LOGO</div>
+      <img id="logoImg" alt="logo" style="display:none" />
+      <div class="logo-text" id="brandName" style="display:none"></div>
+    </div>
+    <div class="qr-code" id="qrArea">
+      <div class="qr-item" data-qr="1"><div class="qr-ph" data-ph="1">二维码</div><img data-img="1" style="display:none" alt="qr1" /><div class="qr-cap" data-cap="1"></div></div>
+      <div class="qr-item" data-qr="2"><div class="qr-ph" data-ph="2">二维码</div><img data-img="2" style="display:none" alt="qr2" /><div class="qr-cap" data-cap="2"></div></div>
+    </div>
+  </header>
+
+  <div class="statusline">
+    <span id="clock">--</span>
+    <span class="dot" id="dot"></span>
+    <span id="connState">连接中…</span>
+  </div>
+
+  <div class="cta-wrap" id="ctaWrap">
+    <a class="cta" id="ctaBtn" href="#" target="_blank" rel="noopener">
+      <span id="ctaText">下载 APP，了解更多</span><span>›</span>
+    </a>
+    <span class="cta-close" id="ctaClose" title="关闭">✕</span>
+  </div>
+
+  <div class="marquee" id="marqueeWrap"><div class="marquee-text" id="marqueeText"></div></div>
+
+  <div class="table-head">
+    <div>商 品</div><div>回 购</div><div>销 售</div><div>高/低</div>
+  </div>
+
+  <div class="content" id="content">
+    <div class="quote-table" id="rows"></div>
+    <div class="memo" id="memo"></div>
+    <div style="height:16px"></div>
+  </div>
+
+  <footer class="footer">
+    <div class="tab active">
+      <svg viewBox="0 0 24 24"><path d="M3 13h2v7H3zM8 8h2v12H8zM13 3h2v17h-2zM18 9h2v11h-2z"/></svg><span>行情</span>
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zm2 2v12h12V6z"/><path d="M6 12h12v2H6z"/></svg><span>基差</span>
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24"><path d="M4 4h16v14H7L4 21z" style="fill:none;stroke:currentColor;stroke-width:2"/></svg><span>资讯</span>
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg><span>快讯</span>
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24"><path d="M6 7h12l-1 13H7z" style="fill:none;stroke:currentColor;stroke-width:2"/><path d="M9 7a3 3 0 0 1 6 0" style="fill:none;stroke:currentColor;stroke-width:2"/></svg><span>商城</span>
+    </div>
+  </footer>
+
+  <button class="float-btn" id="qrBtn" title="查看二维码">
+    <svg viewBox="0 0 24 24"><path d="M3 3h7v7H3zm2 2v3h3V5zM14 3h7v7h-7zm2 2v3h3V5zM3 14h7v7H3zm2 2v3h3v-3zM14 14h3v3h-3zm5 0h2v2h-2zM14 19h2v2h-2zm3 1h4v1h-4z"/></svg>
+  </button>
+  <button class="set-btn" id="openSettings" title="设置">
+    <svg viewBox="0 0 24 24"><path d="M12 8.5A3.5 3.5 0 1 0 12 15.5A3.5 3.5 0 1 0 12 8.5zm9 4.9v-2.8l-2.4-.4a6.9 6.9 0 0 0-.8-2l1.4-2-2-2-2 1.4a6.9 6.9 0 0 0-2-.8L12.8 2h-2.8l-.4 2.4a6.9 6.9 0 0 0-2 .8L5.6 3.8l-2 2 1.4 2a6.9 6.9 0 0 0-.8 2L2 10.6v2.8l2.4.4a6.9 6.9 0 0 0 .8 2l-1.4 2 2 2 2-1.4a6.9 6.9 0 0 0 2 .8l.4 2.4h2.8l.4-2.4a6.9 6.9 0 0 0 2-.8l2 1.4 2-2-1.4-2a6.9 6.9 0 0 0 .8-2z" style="fill:none;stroke:currentColor;stroke-width:1.6"/></svg>
+  </button>
+
+  <div class="hint" id="hint">正在连接行情服务…<br/>点左下角 ⚙ 可自定义 LOGO、二维码与每个价格的增减</div>
+</div>
+
+<div class="mask" id="mask"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-head"><b>设置</b><button class="x" id="closeDrawer">×</button></div>
+  <div class="tabs">
+    <button data-tab="brand" class="on">品牌 / 二维码</button>
+    <button data-tab="price">价格调整</button>
+    <button data-tab="more">其他</button>
+  </div>
+
+  <section class="pane on" data-pane="brand">
+    <div class="field">
+      <label>LOGO（建议 180×52，透明 PNG 效果最好）</label>
+      <div class="thumb" id="logoThumb">未设置，使用文字品牌名</div>
+      <div class="btnrow">
+        <label class="btn">上传图片<input type="file" accept="image/*" id="logoFile" hidden /></label>
+        <button class="btn" id="logoClear">清除 LOGO</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>品牌名称（未上传 LOGO 时显示）</label>
+      <input type="text" id="brandNameInput" placeholder="例如：某某黄金" />
+    </div>
+    <div class="switch"><input type="checkbox" id="showNameChk" /><label for="showNameChk">LOGO 右侧同时显示品牌名</label></div>
+
+    <div class="field">
+      <label>二维码 1</label>
+      <div class="thumb" id="qr1Thumb">未设置</div>
+      <div class="btnrow">
+        <label class="btn">上传图片<input type="file" accept="image/*" id="qr1File" hidden /></label>
+        <button class="btn" id="qr1Clear">清除</button>
+      </div>
+      <label style="margin-top:8px">二维码 1 说明文字</label>
+      <input type="text" id="qr1CapInput" placeholder="例如：零售金条" />
+    </div>
+
+    <div class="field">
+      <label>二维码 2</label>
+      <div class="thumb" id="qr2Thumb">未设置</div>
+      <div class="btnrow">
+        <label class="btn">上传图片<input type="file" accept="image/*" id="qr2File" hidden /></label>
+        <button class="btn" id="qr2Clear">清除</button>
+      </div>
+      <label style="margin-top:8px">二维码 2 说明文字</label>
+      <input type="text" id="qr2CapInput" placeholder="例如：扫码有惊喜" />
+    </div>
+    <div class="switch"><input type="checkbox" id="showQrChk" /><label for="showQrChk">显示二维码</label></div>
+
+    <div class="field">
+      <label>顶部按钮文字</label>
+      <input type="text" id="ctaTextInput" placeholder="下载 APP，了解更多" />
+    </div>
+    <div class="field">
+      <label>顶部按钮链接</label>
+      <input type="text" id="ctaUrlInput" placeholder="https://…" />
+    </div>
+    <div class="switch"><input type="checkbox" id="showCtaChk" /><label for="showCtaChk">显示顶部按钮</label></div>
+
+    <div class="field">
+      <label>滚动公告</label>
+      <textarea id="marqueeInput" placeholder="留空则不显示"></textarea>
+    </div>
+    <div class="field">
+      <label>底部声明</label>
+      <textarea id="memoInput"></textarea>
+    </div>
+  </section>
+
+  <section class="pane" data-pane="price">
+    <div class="legend">
+      每格可独立设置：<b>不调</b> 用原始价；<b>±值</b> 在原始价上加减固定数字；<b>±%</b> 按百分比增减；
+      <b>定值</b> 直接写死。勾选“隐藏”该行不显示。修改实时生效，配置自动保存在本机。
+    </div>
+    <div class="legend" style="margin-bottom:6px">统一设置（一键套用到全部行）</div>
+    <div class="unirow" id="uniRow">
+      <div class="cell"><span>回购</span></div>
+      <div class="cell"><span>销售</span></div>
+      <div class="cell"><span>高</span></div>
+      <div class="cell"><span>低</span></div>
+    </div>
+    <div class="btnrow" style="margin-bottom:12px">
+      <button class="btn pri" id="applyUni">应用到全部行</button>
+      <button class="btn danger" id="clearAll">全部恢复原始价</button>
+    </div>
+    <table class="adjtable">
+      <thead><tr><th>名称</th><th>回购</th><th>销售</th><th>高</th><th>低</th><th>隐藏</th></tr></thead>
+      <tbody id="adjBody"></tbody>
+    </table>
+  </section>
+
+  <section class="pane" data-pane="more">
+    <div class="switch"><input type="checkbox" id="showRawChk" /><label for="showRawChk">在价格下方显示原始价（便于核对）</label></div>
+    <div class="field">
+      <label>字号缩放（0.8 – 1.3）</label>
+      <input type="number" id="scaleInput" min="0.8" max="1.3" step="0.05" />
+    </div>
+    <div class="field">
+      <label>行情地址（一般无需修改）</label>
+      <input type="text" id="wsInput" />
+    </div>
+    <div class="btnrow" style="margin-bottom:14px">
+      <button class="btn" id="reconnect">重新连接</button>
+      <button class="btn" id="exportCfg">导出配置</button>
+      <label class="btn">导入配置<input type="file" accept="application/json" id="importCfg" hidden /></label>
+      <button class="btn danger" id="resetCfg">恢复默认</button>
+    </div>
+    <div class="legend">
+      数据来源：第三方行情网关（与 i.jzj9999.com/quoteh5 同源）。本页面仅作展示，价格与调整值由本机配置决定，
+      请勿用于任何违规用途。
+    </div>
+  </section>
+</aside>
+
+<div class="qrdialog" id="qrDialog">
+  <div class="inner" id="qrDialogInner"></div>
+</div>
+
+<script>
+/* ============================================================
+   贵金属行情牌价看板 —— 单文件实现
+   1) bl/base64/protobuf 工具
+   2) Blowfish-CBC（网关鉴权）
+   3) 网关客户端（鉴权 -> 合约信息 -> 订阅实时行情）
+   4) 渲染 & 调整（每个数值可独立加减/百分比）
+   5) 品牌/二维码/配置持久化
+   ============================================================ */
+(function () {
+  'use strict';
+
+  /* ---------- Blowfish P/S 常量 ---------- */
+  const BF = [[608135816,2242054355,320440878,57701188,2752067618,698298832,137296536,3964562569,1160258022,953160567,3193202383,887688300,3232508343,3380367581,1065670069,3041331479,2450970073,2306472731],[3509652390,2564797868,805139163,3491422135,3101798381,1780907670,3128725573,4046225305,614570311,3012652279,134345442,2240740374,1667834072,1901547113,2757295779,4103290238,227898511,1921955416,1904987480,2182433518,2069144605,3260701109,2620446009,720527379,3318853667,677414384,3393288472,3101374703,2390351024,1614419982,1822297739,2954791486,3608508353,3174124327,2024746970,1432378464,3864339955,2857741204,1464375394,1676153920,1439316330,715854006,3033291828,289532110,2706671279,2087905683,3018724369,1668267050,732546397,1947742710,3462151702,2609353502,2950085171,1814351708,2050118529,680887927,999245976,1800124847,3300911131,1713906067,1641548236,4213287313,1216130144,1575780402,4018429277,3917837745,3693486850,3949271944,596196993,3549867205,258830323,2213823033,772490370,2760122372,1774776394,2652871518,566650946,4142492826,1728879713,2882767088,1783734482,3629395816,2517608232,2874225571,1861159788,326777828,3124490320,2130389656,2716951837,967770486,1724537150,2185432712,2364442137,1164943284,2105845187,998989502,3765401048,2244026483,1075463327,1455516326,1322494562,910128902,469688178,1117454909,936433444,3490320968,3675253459,1240580251,122909385,2157517691,634681816,4142456567,3825094682,3061402683,2540495037,79693498,3249098678,1084186820,1583128258,426386531,1761308591,1047286709,322548459,995290223,1845252383,2603652396,3431023940,2942221577,3202600964,3727903485,1712269319,422464435,3234572375,1170764815,3523960633,3117677531,1434042557,442511882,3600875718,1076654713,1738483198,4213154764,2393238008,3677496056,1014306527,4251020053,793779912,2902807211,842905082,4246964064,1395751752,1040244610,2656851899,3396308128,445077038,3742853595,3577915638,679411651,2892444358,2354009459,1767581616,3150600392,3791627101,3102740896,284835224,4246832056,1258075500,768725851,2589189241,3069724005,3532540348,1274779536,3789419226,2764799539,1660621633,3471099624,4011903706,913787905,3497959166,737222580,2514213453,2928710040,3937242737,1804850592,3499020752,2949064160,2386320175,2390070455,2415321851,4061277028,2290661394,2416832540,1336762016,1754252060,3520065937,3014181293,791618072,3188594551,3933548030,2332172193,3852520463,3043980520,413987798,3465142937,3030929376,4245938359,2093235073,3534596313,375366246,2157278981,2479649556,555357303,3870105701,2008414854,3344188149,4221384143,3956125452,2067696032,3594591187,2921233993,2428461,544322398,577241275,1471733935,610547355,4027169054,1432588573,1507829418,2025931657,3646575487,545086370,48609733,2200306550,1653985193,298326376,1316178497,3007786442,2064951626,458293330,2589141269,3591329599,3164325604,727753846,2179363840,146436021,1461446943,4069977195,705550613,3059967265,3887724982,4281599278,3313849956,1404054877,2845806497,146425753,1854211946],[1266315497,3048417604,3681880366,3289982499,2909710000,1235738493,2632868024,2414719590,3970600049,1771706367,1449415276,3266420449,422970021,1963543593,2690192192,3826793022,1062508698,1531092325,1804592342,2583117782,2714934279,4024971509,1294809318,4028980673,1289560198,2221992742,1669523910,35572830,157838143,1052438473,1016535060,1802137761,1753167236,1386275462,3080475397,2857371447,1040679964,2145300060,2390574316,1461121720,2956646967,4031777805,4028374788,33600511,2920084762,1018524850,629373528,3691585981,3515945977,2091462646,2486323059,586499841,988145025,935516892,3367335476,2599673255,2839830854,265290510,3972581182,2759138881,3795373465,1005194799,847297441,406762289,1314163512,1332590856,1866599683,4127851711,750260880,613907577,1450815602,3165620655,3734664991,3650291728,3012275730,3704569646,1427272223,778793252,1343938022,2676280711,2052605720,1946737175,3164576444,3914038668,3967478842,3682934266,1661551462,3294938066,4011595847,840292616,3712170807,616741398,312560963,711312465,1351876610,322626781,1910503582,271666773,2175563734,1594956187,70604529,3617834859,1007753275,1495573769,4069517037,2549218298,2663038764,504708206,2263041392,3941167025,2249088522,1514023603,1998579484,1312622330,694541497,2582060303,2151582166,1382467621,776784248,2618340202,3323268794,2497899128,2784771155,503983604,4076293799,907881277,423175695,432175456,1378068232,4145222326,3954048622,3938656102,3820766613,2793130115,2977904593,26017576,3274890735,3194772133,1700274565,1756076034,4006520079,3677328699,720338349,1533947780,354530856,688349552,3973924725,1637815568,332179504,3949051286,53804574,2852348879,3044236432,1282449977,3583942155,3416972820,4006381244,1617046695,2628476075,3002303598,1686838959,431878346,2686675385,1700445008,1080580658,1009431731,832498133,3223435511,2605976345,2271191193,2516031870,1648197032,4164389018,2548247927,300782431,375919233,238389289,3353747414,2531188641,2019080857,1475708069,455242339,2609103871,448939670,3451063019,1395535956,2413381860,1841049896,1491858159,885456874,4264095073,4001119347,1565136089,3898914787,1108368660,540939232,1173283510,2745871338,3681308437,4207628240,3343053890,4016749493,1699691293,1103962373,3625875870,2256883143,3830138730,1031889488,3479347698,1535977030,4236805024,3251091107,2132092099,1774941330,1199868427,1452454533,157007616,2904115357,342012276,595725824,1480756522,206960106,497939518,591360097,863170706,2375253569,3596610801,1814182875,2094937945,3421402208,1082520231,3463918190,2785509508,435703966,3908032597,1641649973,2842273706,3305899714,1510255612,2148256476,2655287854,3276092548,4258621189,236887753,3681803219,274041037,1734335097,3815195456,3317970021,1899903192,1026095262,4050517792,356393447,2410691914,3873677099,3682840055],[3913112168,2491498743,4132185628,2489919796,1091903735,1979897079,3170134830,3567386728,3557303409,857797738,1136121015,1342202287,507115054,2535736646,337727348,3213592640,1301675037,2528481711,1895095763,1721773893,3216771564,62756741,2142006736,835421444,2531993523,1442658625,3659876326,2882144922,676362277,1392781812,170690266,3921047035,1759253602,3611846912,1745797284,664899054,1329594018,3901205900,3045908486,2062866102,2865634940,3543621612,3464012697,1080764994,553557557,3656615353,3996768171,991055499,499776247,1265440854,648242737,3940784050,980351604,3713745714,1749149687,3396870395,4211799374,3640570775,1161844396,3125318951,1431517754,545492359,4268468663,3499529547,1437099964,2702547544,3433638243,2581715763,2787789398,1060185593,1593081372,2418618748,4260947970,69676912,2159744348,86519011,2512459080,3838209314,1220612927,3339683548,133810670,1090789135,1078426020,1569222167,845107691,3583754449,4072456591,1091646820,628848692,1613405280,3757631651,526609435,236106946,48312990,2942717905,3402727701,1797494240,859738849,992217954,4005476642,2243076622,3870952857,3732016268,765654824,3490871365,2511836413,1685915746,3888969200,1414112111,2273134842,3281911079,4080962846,172450625,2569994100,980381355,4109958455,2819808352,2716589560,2568741196,3681446669,3329971472,1835478071,660984891,3704678404,4045999559,3422617507,3040415634,1762651403,1719377915,3470491036,2693910283,3642056355,3138596744,1364962596,2073328063,1983633131,926494387,3423689081,2150032023,4096667949,1749200295,3328846651,309677260,2016342300,1779581495,3079819751,111262694,1274766160,443224088,298511866,1025883608,3806446537,1145181785,168956806,3641502830,3584813610,1689216846,3666258015,3200248200,1692713982,2646376535,4042768518,1618508792,1610833997,3523052358,4130873264,2001055236,3610705100,2202168115,4028541809,2961195399,1006657119,2006996926,3186142756,1430667929,3210227297,1314452623,4074634658,4101304120,2273951170,1399257539,3367210612,3027628629,1190975929,2062231137,2333990788,2221543033,2438960610,1181637006,548689776,2362791313,3372408396,3104550113,3145860560,296247880,1970579870,3078560182,3769228297,1714227617,3291629107,3898220290,166772364,1251581989,493813264,448347421,195405023,2709975567,677966185,3703036547,1463355134,2715995803,1338867538,1343315457,2802222074,2684532164,233230375,2599980071,2000651841,3277868038,1638401717,4028070440,3237316320,6314154,819756386,300326615,590932579,1405279636,3267499572,3150704214,2428286686,3959192993,3461946742,1862657033,1266418056,963775037,2089974820,2263052895,1917689273,448879540,3550394620,3981727096,150775221,3627908307,1303187396,508620638,2975983352,2726630617,1817252668,1876281319,1457606340,908771278,3720792119,3617206836,2455994898,1729034894,1080033504],[976866871,3556439503,2881648439,1522871579,1555064734,1336096578,3548522304,2579274686,3574697629,3205460757,3593280638,3338716283,3079412587,564236357,2993598910,1781952180,1464380207,3163844217,3332601554,1699332808,1393555694,1183702653,3581086237,1288719814,691649499,2847557200,2895455976,3193889540,2717570544,1781354906,1676643554,2592534050,3230253752,1126444790,2770207658,2633158820,2210423226,2615765581,2414155088,3127139286,673620729,2805611233,1269405062,4015350505,3341807571,4149409754,1057255273,2012875353,2162469141,2276492801,2601117357,993977747,3918593370,2654263191,753973209,36408145,2530585658,25011837,3520020182,2088578344,530523599,2918365339,1524020338,1518925132,3760827505,3759777254,1202760957,3985898139,3906192525,674977740,4174734889,2031300136,2019492241,3983892565,4153806404,3822280332,352677332,2297720250,60907813,90501309,3286998549,1016092578,2535922412,2839152426,457141659,509813237,4120667899,652014361,1966332200,2975202805,55981186,2327461051,676427537,3255491064,2882294119,3433927263,1307055953,942726286,933058658,2468411793,3933900994,4215176142,1361170020,2001714738,2830558078,3274259782,1222529897,1679025792,2729314320,3714953764,1770335741,151462246,3013232138,1682292957,1483529935,471910574,1539241949,458788160,3436315007,1807016891,3718408830,978976581,1043663428,3165965781,1927990952,4200891579,2372276910,3208408903,3533431907,1412390302,2931980059,4132332400,1947078029,3881505623,4168226417,2941484381,1077988104,1320477388,886195818,18198404,3786409000,2509781533,112762804,3463356488,1866414978,891333506,18488651,661792760,1628790961,3885187036,3141171499,876946877,2693282273,1372485963,791857591,2686433993,3759982718,3167212022,3472953795,2716379847,445679433,3561995674,3504004811,3574258232,54117162,3331405415,2381918588,3769707343,4154350007,1140177722,4074052095,668550556,3214352940,367459370,261225585,2610173221,4209349473,3468074219,3265815641,314222801,3066103646,3808782860,282218597,3406013506,3773591054,379116347,1285071038,846784868,2669647154,3771962079,3550491691,2305946142,453669953,1268987020,3317592352,3279303384,3744833421,2610507566,3859509063,266596637,3847019092,517658769,3462560207,3443424879,370717030,4247526661,2224018117,4143653529,4112773975,2788324899,2477274417,1456262402,2901442914,1517677493,1846949527,2295493580,3734397586,2176403920,1280348187,1908823572,3871786941,846861322,1172426758,3287448474,3383383037,1655181056,3139813346,901632758,1897031941,2986607138,3066810236,3447102507,1393639104,373351379,950779232,625454576,3124240540,4148612726,2007998917,544563296,2244738638,2330496472,2058025392,1291430526,424198748,50039436,29584100,3605783033,2429876329,2791104160,1057563949,3255363231,3075367218,3463963227,1469046755,985887462]];
+
+  /* ---------- 通用工具 ---------- */
+  const enc = new TextEncoder();
+  const dec = new TextDecoder();
+  const u8 = (arr) => Uint8Array.from(arr);
+  function b64(bytes) {
+    let s = ''; const CH = 0x8000;
+    for (let i = 0; i < bytes.length; i += CH) s += String.fromCharCode.apply(null, bytes.subarray(i, i + CH));
+    return btoa(s);
+  }
+  function concatBytes(list) {
+    let len = 0; for (const a of list) len += a.length;
+    const out = new Uint8Array(len); let p = 0;
+    for (const a of list) { out.set(a, p); p += a.length; }
+    return out;
+  }
+
+  /* ---------- Blowfish（CBC / PKCS5）---------- */
+  const P0 = BF[0], S0 = BF[1], S1 = BF[2], S2 = BF[3], S3 = BF[4];
+  const P = new Uint32Array(P0), S = [new Uint32Array(S0), new Uint32Array(S1), new Uint32Array(S2), new Uint32Array(S3)];
+  function bfF(x) {
+    const a = (x >>> 24) & 255, b = (x >>> 16) & 255, c = (x >>> 8) & 255, d = x & 255;
+    let t = (S[0][a] + S[1][b]) >>> 0;
+    t = (t ^ S[2][c]) >>> 0;
+    return (t + S[3][d]) >>> 0;
+  }
+  function bfEnc(l, r) {
+    for (let i = 0; i < 16; i++) { l = (l ^ P[i]) >>> 0; r = (r ^ bfF(l)) >>> 0; const t = l; l = r; r = t; }
+    const t = l; l = r; r = t;
+    r = (r ^ P[16]) >>> 0; l = (l ^ P[17]) >>> 0;
+    return [l >>> 0, r >>> 0];
+  }
+  function bfExpand(key) {
+    P.set(P0); S[0].set(S0); S[1].set(S1); S[2].set(S2); S[3].set(S3);
+    let j = 0;
+    for (let i = 0; i < 18; i++) {
+      let v = 0;
+      for (let k = 0; k < 4; k++) { v = ((v << 8) | key[j]) >>> 0; j = (j + 1) % key.length; }
+      P[i] = (P[i] ^ v) >>> 0;
+    }
+    let l = 0, r = 0;
+    const next = () => { const out = bfEnc(l, r); l = out[0]; r = out[1]; };
+    for (let i = 0; i < 18; i += 2) { next(); P[i] = l; P[i + 1] = r; }
+    for (const box of S) for (let i = 0; i < 256; i += 2) { next(); box[i] = l; box[i + 1] = r; }
+  }
+  function bfEncryptCBC(plainBytes, keyStr, ivStr) {
+    bfExpand(enc.encode(keyStr));
+    const pad = 8 - (plainBytes.length % 8);
+    const buf = new Uint8Array(plainBytes.length + pad);
+    buf.set(plainBytes); buf.fill(pad, plainBytes.length);
+    const iv = enc.encode(ivStr);
+    const dvIv = new DataView(iv.buffer);
+    let prevL = dvIv.getUint32(0), prevR = dvIv.getUint32(4);
+    const out = new Uint8Array(buf.length);
+    const dv = new DataView(buf.buffer);
+    const dvOut = new DataView(out.buffer);
+    for (let off = 0; off < buf.length; off += 8) {
+      let l = (dv.getUint32(off) ^ prevL) >>> 0;
+      let r = (dv.getUint32(off + 4) ^ prevR) >>> 0;
+      const e = bfEnc(l, r); l = e[0]; r = e[1];
+      dvOut.setUint32(off, l); dvOut.setUint32(off + 4, r);
+      prevL = l; prevR = r;
+    }
+    return out;
+  }
+
+  /* ---------- protobuf（只覆盖用到的字段）---------- */
+  function vint(n) {
+    const o = []; let x = Math.floor(n);
+    while (x > 127) { o.push((x & 127) | 128); x = Math.floor(x / 128); }
+    o.push(x); return o;
+  }
+  const tag = (f, w) => vint((f << 3) | w);
+  const ld = (f, bytes) => tag(f, 2).concat(vint(bytes.length), Array.from(bytes));
+  const str = (f, s) => ld(f, enc.encode(s));
+  const int32 = (f, n) => tag(f, 0).concat(vint(n));
+
+  function envelope(msgid, opts) {
+    opts = opts || {};
+    let body = int32(1, msgid).concat(int32(2, opts.seq || 1));
+    if (opts.request) body = body.concat(ld(4, opts.request));
+    if (opts.requestBytes) body = body.concat(ld(4, opts.requestBytes));
+    if (opts.json !== undefined) body = body.concat(str(8, JSON.stringify(opts.json)));
+    return u8(body);
+  }
+
+  function decodeMsg(buf) {
+    const out = []; let p = 0;
+    const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+    const rv = () => {
+      let r = 0, sh = 0;
+      while (true) { const b = buf[p++]; r += (b & 127) * Math.pow(2, sh); sh += 7; if (!(b & 128)) break; }
+      return r;
+    };
+    while (p < buf.length) {
+      const t = buf[p++]; const f = t >>> 3, w = t & 7;
+      if (w === 0) out.push({ f, w, v: rv() });
+      else if (w === 1) { out.push({ f, w, v: dv.getFloat64(p, true) }); p += 8; }
+      else if (w === 5) { out.push({ f, w, v: dv.getFloat32(p, true) }); p += 4; }
+      else if (w === 2) { const n = rv(); out.push({ f, w, v: buf.subarray(p, p + n) }); p += n; }
+      else throw new Error('bad wire ' + w);
+    }
+    return out;
+  }
+  function packedDoubles(buf) {
+    const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+    const a = [];
+    for (let p = 0; p + 8 <= buf.length; p += 8) a.push(dv.getFloat64(p, true));
+    return a;
+  }
+  const of = (fields, f, w) => fields.filter((x) => x.f === f && (w === undefined || x.w === w));
+
+  /* ---------- 合约代码 ---------- */
+  const AUTH = { apptype: 'rtj', verifycode: 'plaintract', key: 'tdc5%y4yaU@xFi', iv: '5X4f$^hp' };
+  const DEFAULT_WS = 'wss://rtjwbqt.ytj9999.com:8443/gateway';
+
+  // 与 i.jzj9999.com/quoteh5 一致的 21 个品种；rtg:true 表示“回购/销售”用 _PB/_PS 两条报价
+  const PRODUCTS = [
+    { key: 'Au99.99', name: '黄金9999', prcs: 2 },
+    { key: 'Au(T+D)', name: '黄金T+D', prcs: 2 },
+    { key: 'JZJ_au', name: '黄 金', prcs: 2, rtg: true },
+    { key: 'JZJ_ag', name: '白 银', prcs: 3, rtg: true },
+    { key: 'JZJ_pt', name: '铂 金', prcs: 2, rtg: true },
+    { key: 'JZJ_pd', name: '钯 金', prcs: 2, rtg: true },
+    { key: 'RH_JZL', name: '铑金', prcs: 2, rtg: true },
+    { key: 'JZJ_IR', name: '铱', prcs: 1, rtg: true },
+    { key: 'JZJ_RU', name: '钌', prcs: 1, rtg: true },
+    { key: 'Ag(T+D)', name: '白银T+D', prcs: 0 },
+    { key: 'Pt99.95', name: '铂金9995', prcs: 2 },
+    { key: 'GLNC', name: '美黄金', prcs: 2 },
+    { key: 'PLNC', name: '美铂金', prcs: 1 },
+    { key: 'PANC', name: '美钯金', prcs: 1 },
+    { key: 'SLNC', name: '美白银', prcs: 3 },
+    { key: 'RH', name: '美铑金', prcs: 2 },
+    { key: 'XAU', name: '伦敦金', prcs: 2 },
+    { key: 'XAG', name: '伦敦银', prcs: 3 },
+    { key: 'XAP', name: '伦敦铂', prcs: 2 },
+    { key: 'XPD', name: '伦敦钯', prcs: 2 },
+    { key: 'USDCNH', name: '美元', prcs: 4 },
+  ];
+  const SUB_CODES = [];
+  PRODUCTS.forEach((p) => {
+    if (p.rtg) { SUB_CODES.push(p.key + '_PS', p.key + '_PB'); }
+    else SUB_CODES.push(p.key);
+  });
+
+  /* ---------- 配置 ---------- */
+  const STORE_KEY = 'quoteBoard.config.v1';
+  function defaultCfg() {
+    const rows = {};
+    PRODUCTS.forEach((p) => {
+      rows[p.key] = {
+        name: p.name, hidden: false,
+        adj: {
+          buy: { mode: 'none', value: 0 },
+          sell: { mode: 'none', value: 0 },
+          hi: { mode: 'none', value: 0 },
+          lo: { mode: 'none', value: 0 },
+        },
+      };
+    });
+    return {
+      brand: { name: '我的行情', logo: null, qr1: null, qr2: null, qr1Cap: '', qr2Cap: '', showQr: true, showName: false },
+      head: {
+        ctaText: '下载 APP，了解更多', ctaUrl: 'https://ii.jzj9999.com/web/download.html', showCta: true,
+        marquee: '以上行情仅供参考，实际成交价以门店挂牌为准。',
+        memo: '声明：以上行情仅供参考，不构成任何投资建议。',
+      },
+      more: { showRaw: false, scale: 1, ws: DEFAULT_WS },
+      rows,
+    };
+  }
+  function mergeCfg(base, patch) {
+    if (!patch || typeof patch !== 'object') return base;
+    const out = Array.isArray(base) ? base : Object.assign({}, base);
+    for (const k of Object.keys(patch)) {
+      const bv = base ? base[k] : undefined, pv = patch[k];
+      if (pv && typeof pv === 'object' && !Array.isArray(pv) && bv && typeof bv === 'object' && !Array.isArray(bv)) {
+        out[k] = mergeCfg(bv, pv);
+      } else if (pv !== undefined) {
+        out[k] = pv;
+      }
+    }
+    return out;
+  }
+  let cfg = defaultCfg();
+  try {
+    const saved = localStorage.getItem(STORE_KEY);
+    if (saved) cfg = mergeCfg(defaultCfg(), JSON.parse(saved));
+  } catch (e) { /* ignore */ }
+  function normalizeCfg() {
+    cfg.brand = cfg.brand || {};
+    cfg.head = cfg.head || {};
+    cfg.more = cfg.more || {};
+    cfg.rows = cfg.rows || {};
+    PRODUCTS.forEach((p) => {
+      const rc = cfg.rows[p.key] || (cfg.rows[p.key] = {});
+      rc.name = rc.name || p.name;
+      rc.hidden = !!rc.hidden;
+      rc.adj = rc.adj || {};
+      ['buy', 'sell', 'hi', 'lo'].forEach((c) => {
+        const a = rc.adj[c] || (rc.adj[c] = { mode: 'none', value: 0 });
+        if (!a.mode) a.mode = 'none';
+        a.value = Number(a.value || 0);
+      });
+    });
+    if (typeof cfg.more.scale !== 'number') cfg.more.scale = 1;
+    if (!cfg.more.ws) cfg.more.ws = DEFAULT_WS;
+  }
+  normalizeCfg();
+  function saveCfg() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(cfg)); } catch (e) { /* ignore */ }
+  }
+
+  /* ---------- 行情状态 ---------- */
+  const quotes = Object.create(null);   // code -> {last, high, low, bid, ask, updown, ts}
+  const meta = Object.create(null);     // code -> {name, prcs}
+
+  /* ---------- 网关客户端 ---------- */
+  const state = { ws: null, ready: false, seq: 0, hb: null, retry: 0, timer: null, lastMsg: 0, msgCount: 0, gen: 0 };
+
+  function send(msgid, opts) {
+    if (!state.ws || state.ws.readyState !== 1) return;
+    state.seq++;
+    try { state.ws.send(envelope(msgid, Object.assign({ seq: state.seq }, opts || {}))); } catch (e) { /* ignore */ }
+  }
+  function authPayload() {
+    const token = bfEncryptCBC(enc.encode(AUTH.verifycode + AUTH.apptype + Date.now()), AUTH.key, AUTH.iv);
+    return { requestBytes: ld(5, concatBytes([u8(str(1, AUTH.apptype)), u8(ld(2, token))])) };
+  }
+  function subscribeAll() {
+    const codes = [];
+    SUB_CODES.forEach((c) => { codes.push.apply(codes, str(1, c)); });
+    const freq = ld(2, u8([0]));  // freq=[0] REALTIME
+    send(18, { request: u8(codes.concat(Array.from(freq))) });
+  }
+  function connect() {
+    const url = (cfg.more && cfg.more.ws) || DEFAULT_WS;
+    setConn('连接中…', false);
+    if (state.hb) { clearInterval(state.hb); state.hb = null; }
+    state.ready = false;
+    const gen = ++state.gen;
+    if (state.ws) { try { state.ws.close(); } catch (e) { /* ignore */ } }
+    let ws;
+    try { ws = new WebSocket(url); } catch (e) { setConn('连接失败：' + e.message, false); return; }
+    ws.binaryType = 'arraybuffer';
+    state.ws = ws;
+
+    ws.onopen = function () {
+      if (gen !== state.gen) return;
+      state.retry = 0;
+      send(32, authPayload());
+    };
+    ws.onmessage = function (ev) {
+      if (gen !== state.gen) return;
+      state.lastMsg = Date.now(); state.msgCount++;
+      let buf;
+      try { buf = new Uint8Array(ev.data); } catch (e) { return; }
+      handleFrame(buf);
+    };
+    ws.onerror = function () {
+      if (gen !== state.gen) return;
+      setConn('连接异常', false);
+    };
+    ws.onclose = function () {
+      if (gen !== state.gen) return;
+      state.ready = false;
+      if (state.hb) { clearInterval(state.hb); state.hb = null; }
+      setConn('已断开，重连中…', false);
+      scheduleReconnect();
+    };
+  }
+  function scheduleReconnect() {
+    if (state.timer) clearTimeout(state.timer);
+    const wait = Math.min(1000 * Math.pow(1.6, state.retry++), 12000);
+    state.timer = setTimeout(function () { connect(); }, wait);
+  }
+  function handleFrame(buf) {
+    let fields;
+    try { fields = decodeMsg(buf); } catch (e) { return; }
+
+    // jsonResp（合约信息）
+    const jsonF = of(fields, 9, 2);
+    if (jsonF.length) {
+      try {
+        const data = JSON.parse(dec.decode(jsonF[0].v));
+        (data.codes || []).forEach((c) => { meta[c.code] = { name: c.name, prcs: c.prcs }; });
+      } catch (e) { /* ignore */ }
+    }
+
+    const msgid = (of(fields, 1, 0)[0] || {}).v;
+
+    // 鉴权成功 -> 拉合约信息 + 订阅
+    if (msgid === 32) {
+      let errCode = 0;
+      const rf0 = of(fields, 5, 2)[0];
+      if (rf0) {
+        try {
+          const rr = decodeMsg(rf0.v);
+          const ec = of(rr, 3, 0)[0];
+          if (ec && typeof ec.v === 'number') errCode = ec.v;
+        } catch (e) { /* ignore */ }
+      }
+      if (errCode > 0) {
+        setConn('鉴权失败(' + errCode + ')', false);
+        return;
+      }
+      state.ready = true;
+      setConn('实时', true);
+      send(66, { json: {} });
+      subscribeAll();
+      if (!state.hb) state.hb = setInterval(function () { send(16, {}); }, 20000);
+      hideHint();
+    }
+
+    // 行情
+    of(fields, 5, 2).forEach((resp) => {
+      let rf;
+      try { rf = decodeMsg(resp.v); } catch (e) { return; }
+      of(rf, 1, 2).forEach((qf) => {
+        try { parseQuotation(qf.v); } catch (e) { /* ignore */ }
+      });
+    });
+  }
+  function parseQuotation(sub) {
+    const fields = decodeMsg(sub);
+    const code = (of(fields, 1, 2)[0] || {}).v;
+    if (!code) return;
+    const codeStr = dec.decode(code);
+    const q = quotes[codeStr] || (quotes[codeStr] = { last: null, high: null, low: null, bid: null, ask: null, updown: 0, ts: 0 });
+    of(fields, 9, 1).forEach((x) => { q.high = x.v; });
+    of(fields, 10, 1).forEach((x) => { q.low = x.v; });
+    of(fields, 7, 2).forEach((rt) => {
+      const r = decodeMsg(rt.v);
+      of(r, 1, 1).forEach((x) => { q.last = x.v; });
+      of(r, 11, 1).forEach((x) => { q.updown = x.v; });
+      of(r, 2, 2).forEach((x) => { const a = packedDoubles(x.v); if (a.length) q.ask = a[0]; });
+      of(r, 4, 2).forEach((x) => { const b = packedDoubles(x.v); if (b.length) q.bid = b[0]; });
+    });
+    q.ts = Date.now();
+  }
+  function setConn(text, ok) {
+    const el = document.getElementById('connState');
+    const dot = document.getElementById('dot');
+    if (el) el.textContent = text;
+    if (dot) dot.className = 'dot' + (ok ? '' : ' off');
+  }
+  function hideHint() {
+    const h = document.getElementById('hint');
+    if (h) setTimeout(function () { h.classList.add('hide'); }, 1200);
+  }
+
+  /* ---------- 取值 & 调整 ---------- */
+  const PICK = (code) => quotes[code] || null;
+  const fin = (v) => (typeof v === 'number' && isFinite(v) ? v : null);
+  function prcsFor(code, fallback) {
+    const m = meta[code];
+    if (m && typeof m.prcs === 'number') return m.prcs;
+    return fallback;
+  }
+  function adjust(base, adj, prcs) {
+    if (base === null) return null;
+    if (!adj || !adj.mode || adj.mode === 'none') return base;
+    const v = Number(adj.value || 0);
+    let out = base;
+    if (adj.mode === 'add') out = base + v;
+    else if (adj.mode === 'pct') out = base * (1 + v / 100);
+    else if (adj.mode === 'set') out = v;
+    if (!isFinite(out)) return base;
+    return Number(out.toFixed(Math.min(6, prcs)));
+  }
+  function rowData(p, rowCfg) {
+    const adj = (rowCfg && rowCfg.adj) || {};
+    let buy = null, sell = null, hi = null, lo = null, buyUp = 0, sellUp = 0, prcs = p.prcs;
+    if (p.rtg) {
+      const ps = PICK(p.key + '_PS'), pb = PICK(p.key + '_PB');
+      prcs = prcsFor(p.key + '_PS', p.prcs);
+      buy = pb ? fin(pb.last) : null;
+      sell = ps ? fin(ps.last) : null;
+      buyUp = pb ? pb.updown : 0;
+      sellUp = ps ? ps.updown : 0;
+      hi = ps ? fin(ps.high) : null;
+      lo = ps ? fin(ps.low) : null;
+      if (hi === null && pb) hi = fin(pb.high);
+      if (lo === null && pb) lo = fin(pb.low);
+    } else {
+      const q = PICK(p.key);
+      prcs = prcsFor(p.key, p.prcs);
+      if (q) {
+        buy = fin(q.bid); sell = fin(q.ask);
+        buyUp = q.updown; sellUp = q.updown;
+        hi = fin(q.high); lo = fin(q.low);
+      }
+    }
+    return {
+      raw: { buy, sell, hi, lo },
+      buy: adjust(buy, adj.buy, prcs),
+      sell: adjust(sell, adj.sell, prcs),
+      hi: adjust(hi, adj.hi, prcs),
+      lo: adjust(lo, adj.lo, prcs),
+      buyUp, sellUp, prcs,
+    };
+  }
+  const fmt = (v, prcs) => (v === null || v === undefined || !isFinite(v) ? '--' : v.toFixed(prcs));
+  const dirClass = (up) => (up > 0 ? 'rise' : up < 0 ? 'fall' : 'normal');
+
+  /* ---------- 渲染 ---------- */
+  const rowEls = Object.create(null);
+  function buildRows() {
+    const host = document.getElementById('rows');
+    host.innerHTML = '';
+    PRODUCTS.forEach((p) => {
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.dataset.key = p.key;
+      row.innerHTML =
+        '<div class="name"></div>' +
+        '<div class="price"></div>' +
+        '<div class="price"></div>' +
+        '<div class="hl"><span class="price"></span><span class="price"></span></div>';
+      host.appendChild(row);
+      rowEls[p.key] = {
+        row,
+        name: row.children[0],
+        buy: row.children[1],
+        sell: row.children[2],
+        hi: row.children[3].children[0],
+        lo: row.children[3].children[1],
+      };
+    });
+    applyScale();
+  }
+  function applyScale() {
+    const s = Number(cfg.more.scale || 1);
+    const narrow = (window.innerWidth || 999) <= 430;
+    const b = narrow
+      ? { headF: 16, headH: 38, rowH: 44, nameF: 16, priceF: 15 }
+      : { headF: 21, headH: 47, rowH: 52, nameF: 20, priceF: 19 };
+    document.querySelectorAll('.row, .table-head').forEach((el) => {
+      if (el.classList.contains('table-head')) { el.style.fontSize = (b.headF * s) + 'px'; el.style.height = (b.headH * s) + 'px'; }
+      else {
+        el.style.height = (b.rowH * s) + 'px';
+        el.style.fontSize = (b.headF * s) + 'px';
+        el.querySelectorAll('.name').forEach((n) => { n.style.fontSize = (b.nameF * s) + 'px'; });
+        el.querySelectorAll('.price').forEach((n) => { n.style.fontSize = (b.priceF * s) + 'px'; });
+      }
+    });
+    const hh = document.querySelector('.hl');
+    if (hh) hh.style.lineHeight = narrow ? '1.15' : '1.2';
+  }
+  function updateRows() {
+    PRODUCTS.forEach((p) => {
+      const rc = (cfg.rows && cfg.rows[p.key]) || {};
+      const el = rowEls[p.key];
+      if (!el) return;
+      el.row.style.display = rc.hidden ? 'none' : '';
+      const nm = rc.name || p.name;
+      if (el.name.textContent !== nm) el.name.textContent = nm;
+
+      const d = rowData(p, rc);
+      setPrice(el.buy, d.buy, d.buyUp, d.prcs, d.raw.buy, cfg.more.showRaw);
+      setPrice(el.sell, d.sell, d.sellUp, d.prcs, d.raw.sell, cfg.more.showRaw);
+      setPrice(el.hi, d.hi, 1, d.prcs, d.raw.hi, cfg.more.showRaw);   // 高固定红色
+      setPrice(el.lo, d.lo, -1, d.prcs, d.raw.lo, cfg.more.showRaw);  // 低固定绿色
+    });
+  }
+  function setPrice(el, v, up, prcs, raw, showRaw) {
+    const txt = fmt(v, prcs);
+    const cls = 'price ' + dirClass(up);
+    let html = esc(txt);
+    if (showRaw) html += '<span class="rawline">' + esc(fmt(raw, prcs)) + '</span>';
+    if (el.__html !== html) { el.innerHTML = html; el.__html = html; }
+    if (el.className !== cls) el.className = cls;
+  }
+  function esc(s) { return String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+
+  /* ---------- 头部 / 二维码 / 文案 ---------- */
+  function paintBrand() {
+    const b = cfg.brand;
+    const img = document.getElementById('logoImg');
+    const empty = document.getElementById('logoEmpty');
+    const nameEl = document.getElementById('brandName');
+    if (b.logo) {
+      img.src = b.logo; img.style.display = '';
+      empty.style.display = 'none';
+      if (b.showName && b.name) { nameEl.textContent = b.name; nameEl.style.display = ''; }
+      else nameEl.style.display = 'none';
+    } else {
+      img.style.display = 'none';
+      empty.style.display = '';
+      empty.textContent = b.name || '我的 LOGO';
+      nameEl.style.display = 'none';
+    }
+    document.getElementById('qrArea').style.display = b.showQr ? '' : 'none';
+    [1, 2].forEach((i) => {
+      const url = b['qr' + i];
+      const box = document.querySelector('[data-qr="' + i + '"]');
+      const im = box.querySelector('[data-img="' + i + '"]');
+      const ph = box.querySelector('[data-ph="' + i + '"]');
+      const cap = box.querySelector('[data-cap="' + i + '"]');
+      const capText = b['qr' + i + 'Cap'] || '';
+      cap.textContent = capText;
+      cap.style.display = capText ? '' : 'none';
+      if (capText) box.classList.add('cap'); else box.classList.remove('cap');
+      if (url) { im.src = url; im.style.display = ''; ph.style.display = 'none'; }
+      else { im.style.display = 'none'; ph.style.display = ''; }
+    });
+    // 文案
+    document.getElementById('ctaText').textContent = cfg.head.ctaText || '';
+    document.getElementById('ctaWrap').style.display = cfg.head.showCta ? '' : 'none';
+    const btn = document.getElementById('ctaBtn');
+    btn.href = cfg.head.ctaUrl || '#';    const mq = document.getElementById('marqueeText');
+    mq.textContent = cfg.head.marquee || '';
+    document.getElementById('marqueeWrap').style.display = cfg.head.marquee ? '' : 'none';
+    if (cfg.head.marquee) { mq.classList.remove('no-anim'); }
+    document.getElementById('memo').innerHTML = (cfg.head.memo || '').split('\n').map((l) => '<div>' + esc(l) + '</div>').join('');
+    document.title = (cfg.brand.name || '') + ' 行情牌价';
+  }
+
+  /* ---------- 设置面板 ---------- */
+  const MODES = [['none', '不调'], ['add', '±值'], ['pct', '±%'], ['set', '定值']];
+  function cellHtml(mode, value) {
+    let sel = '<select>';
+    MODES.forEach((m) => { sel += '<option value="' + m[0] + '"' + (m[0] === mode ? ' selected' : '') + '>' + m[1] + '</option>'; });
+    sel += '</select>';
+    return sel + '<input type="number" step="any" value="' + (value || 0) + '" />';
+  }
+  function buildAdjTable() {
+    const body = document.getElementById('adjBody');
+    body.innerHTML = '';
+    PRODUCTS.forEach((p) => {
+      const rc = cfg.rows[p.key];
+      const tr = document.createElement('tr');
+      tr.dataset.key = p.key;
+      tr.innerHTML =
+        '<td class="nm"><input type="text" value="' + esc(rc.name || p.name) + '" /></td>' +
+        '<td class="cell" data-col="buy">' + cellHtml(rc.adj.buy.mode, rc.adj.buy.value) + '</td>' +
+        '<td class="cell" data-col="sell">' + cellHtml(rc.adj.sell.mode, rc.adj.sell.value) + '</td>' +
+        '<td class="cell" data-col="hi">' + cellHtml(rc.adj.hi.mode, rc.adj.hi.value) + '</td>' +
+        '<td class="cell" data-col="lo">' + cellHtml(rc.adj.lo.mode, rc.adj.lo.value) + '</td>' +
+        '<td class="hidecol"><input type="checkbox"' + (rc.hidden ? ' checked' : '') + ' /></td>';
+      body.appendChild(tr);
+    });
+  }
+  function bindAdjTable() {
+    document.getElementById('adjBody').addEventListener('input', function (ev) {
+      const tr = ev.target.closest('tr');
+      if (!tr) return;
+      const key = tr.dataset.key;
+      const rc = cfg.rows[key];
+      if (!rc) return;
+      if (ev.target.closest('.nm')) { rc.name = ev.target.value; }
+      else if (ev.target.type === 'checkbox') { rc.hidden = ev.target.checked; }
+      else {
+        const cell = ev.target.closest('.cell');
+        if (!cell) return;
+        const col = cell.dataset.col;
+        const sel = cell.querySelector('select'), num = cell.querySelector('input');
+        rc.adj[col] = { mode: sel.value, value: Number(num.value || 0) };
+      }
+      saveCfg(); updateRows();
+    });
+  }
+  function buildUniRow() {
+    const row = document.getElementById('uniRow');
+    ['buy', 'sell', 'hi', 'lo'].forEach((col) => {
+      const cell = row.querySelector('.cell:nth-child(' + (['buy', 'sell', 'hi', 'lo'].indexOf(col) + 1) + ')');
+      cell.dataset.col = col;
+      cell.innerHTML = cell.innerHTML + cellHtml('none', 0);
+    });
+    document.getElementById('applyUni').onclick = function () {
+      ['buy', 'sell', 'hi', 'lo'].forEach((col) => {
+        const cell = row.querySelector('.cell[data-col="' + col + '"]');
+        const mode = cell.querySelector('select').value;
+        const value = Number(cell.querySelector('input').value || 0);
+        PRODUCTS.forEach((p) => { cfg.rows[p.key].adj[col] = { mode, value }; });
+      });
+      saveCfg(); buildAdjTable(); updateRows();
+      flash('已套用到全部行');
+    };
+    document.getElementById('clearAll').onclick = function () {
+      PRODUCTS.forEach((p) => {
+        Object.keys(cfg.rows[p.key].adj).forEach((c) => { cfg.rows[p.key].adj[c] = { mode: 'none', value: 0 }; });
+      });
+      saveCfg(); buildAdjTable(); updateRows();
+      flash('已恢复原始价');
+    };
+  }
+  function flash(msg) {
+    const h = document.getElementById('hint');
+    h.innerHTML = esc(msg);
+    h.classList.remove('hide');
+    clearTimeout(flash.__t);
+    flash.__t = setTimeout(function () { h.classList.add('hide'); }, 1500);
+  }
+
+  function openDrawer(tab) {
+    document.getElementById('mask').classList.add('show');
+    document.getElementById('drawer').classList.add('show');
+    switchTab(tab || 'brand');
+    syncForm();
+  }
+  function closeDrawer() {
+    document.getElementById('mask').classList.remove('show');
+    document.getElementById('drawer').classList.remove('show');
+  }
+  function switchTab(name) {
+    document.querySelectorAll('.tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === name));
+    document.querySelectorAll('.pane').forEach((p) => p.classList.toggle('on', p.dataset.pane === name));
+  }
+  function syncForm() {
+    document.getElementById('brandNameInput').value = cfg.brand.name || '';
+    document.getElementById('showNameChk').checked = !!cfg.brand.showName;
+    document.getElementById('qr1CapInput').value = cfg.brand.qr1Cap || '';
+    document.getElementById('qr2CapInput').value = cfg.brand.qr2Cap || '';
+    document.getElementById('showQrChk').checked = !!cfg.brand.showQr;
+    document.getElementById('ctaTextInput').value = cfg.head.ctaText || '';
+    document.getElementById('ctaUrlInput').value = cfg.head.ctaUrl || '';
+    document.getElementById('showCtaChk').checked = !!cfg.head.showCta;
+    document.getElementById('marqueeInput').value = cfg.head.marquee || '';
+    document.getElementById('memoInput').value = cfg.head.memo || '';
+    document.getElementById('showRawChk').checked = !!cfg.more.showRaw;
+    document.getElementById('scaleInput').value = cfg.more.scale || 1;
+    document.getElementById('wsInput').value = cfg.more.ws || DEFAULT_WS;
+    document.getElementById('logoThumb').innerHTML = cfg.brand.logo ? '<img src="' + cfg.brand.logo + '" />' : '未设置，使用文字品牌名';
+    document.getElementById('qr1Thumb').innerHTML = cfg.brand.qr1 ? '<img src="' + cfg.brand.qr1 + '" />' : '未设置';
+    document.getElementById('qr2Thumb').innerHTML = cfg.brand.qr2 ? '<img src="' + cfg.brand.qr2 + '" />' : '未设置';
+    buildAdjTable();
+  }
+
+  /* ---------- 图片上传 ---------- */
+  function bindFile(inputId, apply) {
+    document.getElementById(inputId).addEventListener('change', function (ev) {
+      const f = ev.target.files && ev.target.files[0];
+      if (!f) return;
+      const rd = new FileReader();
+      rd.onload = function () { apply(rd.result); saveCfg(); paintBrand(); syncForm(); };
+      rd.readAsDataURL(f);
+      ev.target.value = '';
+    });
+  }
+
+  /* ---------- 时钟 ---------- */
+  function tick() {
+    const d = new Date();
+    const p2 = (n) => String(n).padStart(2, '0');
+    let label = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + ' ' +
+      p2(d.getHours()) + ':' + p2(d.getMinutes()) + ':' + p2(d.getSeconds());
+    if (!state.ready) label += ' | 未连接';
+    document.getElementById('clock').textContent = label;
+    if (state.ready && Date.now() - state.lastMsg > 60000) setConn('数据延迟…', false);
+    updateRows();
+  }
+
+  /* ---------- 事件绑定 ---------- */
+  function bindUI() {
+    document.getElementById('openSettings').onclick = function () { openDrawer('brand'); };
+    document.getElementById('logoSslot').onclick = function () { openDrawer('brand'); };
+    document.getElementById('closeDrawer').onclick = closeDrawer;
+    document.getElementById('mask').onclick = closeDrawer;
+    document.querySelectorAll('.tabs button').forEach((b) => {
+      b.onclick = function () { switchTab(b.dataset.tab); };
+    });
+
+    bindFile('logoFile', function (url) { cfg.brand.logo = url; });
+    document.getElementById('logoClear').onclick = function () { cfg.brand.logo = null; saveCfg(); paintBrand(); syncForm(); };
+
+    bindFile('qr1File', function (url) { cfg.brand.qr1 = url; });
+    bindFile('qr2File', function (url) { cfg.brand.qr2 = url; });
+    document.getElementById('qr1Clear').onclick = function () { cfg.brand.qr1 = null; saveCfg(); paintBrand(); syncForm(); };
+    document.getElementById('qr2Clear').onclick = function () { cfg.brand.qr2 = null; saveCfg(); paintBrand(); syncForm(); };
+
+    const live = function (id, path, kind) {
+      const el = document.getElementById(id);
+      el.addEventListener('input', function () {
+        const v = kind === 'bool' ? el.checked : el.value;
+        const keys = path.split('.');
+        let o = cfg;
+        for (let i = 0; i < keys.length - 1; i++) o = o[keys[i]];
+        o[keys[keys.length - 1]] = kind === 'num' ? Number(v) : v;
+        saveCfg(); paintBrand(); applyScale(); updateRows();
+      });
+    };
+    live('brandNameInput', 'brand.name', 'text');
+    live('showNameChk', 'brand.showName', 'bool');
+    live('qr1CapInput', 'brand.qr1Cap', 'text');
+    live('qr2CapInput', 'brand.qr2Cap', 'text');
+    live('showQrChk', 'brand.showQr', 'bool');
+    live('ctaTextInput', 'head.ctaText', 'text');
+    live('ctaUrlInput', 'head.ctaUrl', 'text');
+    live('showCtaChk', 'head.showCta', 'bool');
+    document.getElementById('ctaClose').onclick = function () {
+      cfg.head.showCta = false; saveCfg(); paintBrand(); syncForm();
+    };
+    live('marqueeInput', 'head.marquee', 'text');
+    live('memoInput', 'head.memo', 'text');
+    live('showRawChk', 'more.showRaw', 'bool');
+    live('scaleInput', 'more.scale', 'num');
+    live('wsInput', 'more.ws', 'text');
+
+    document.getElementById('reconnect').onclick = function () {
+      if (state.ws) { try { state.ws.close(); } catch (e) { /* ignore */ } }
+      connect();
+      flash('正在重新连接…');
+    };
+    document.getElementById('exportCfg').onclick = function () {
+      const blob = new Blob([JSON.stringify(cfg, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = '行情牌价配置.json';
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+    };
+    document.getElementById('importCfg').addEventListener('change', function (ev) {
+      const f = ev.target.files && ev.target.files[0];
+      if (!f) return;
+      const rd = new FileReader();
+      rd.onload = function () {
+        try {
+          cfg = mergeCfg(defaultCfg(), JSON.parse(rd.result));
+          saveCfg(); paintBrand(); syncForm(); applyScale(); updateRows(); connect();
+          flash('配置已导入');
+        } catch (e) { flash('配置文件格式不对'); }
+      };
+      rd.readAsText(f);
+      ev.target.value = '';
+    });
+    document.getElementById('resetCfg').onclick = function () {
+      cfg = defaultCfg(); saveCfg(); paintBrand(); syncForm(); applyScale(); updateRows();
+      flash('已恢复默认设置');
+    };
+
+    // 二维码放大
+    document.getElementById('qrBtn').onclick = showQrDialog;
+    document.getElementById('qrDialog').onclick = function () { document.getElementById('qrDialog').classList.remove('show'); };
+    document.querySelectorAll('.qr-item').forEach((el) => {
+      el.onclick = function () {
+        const i = Number(el.dataset.qr);
+        showQrDialog(i);
+      };
+    });
+    // 底部 tab 仅做视觉，点击无跳转
+    document.querySelectorAll('.tab').forEach((t) => {
+      t.onclick = function () {
+        document.querySelectorAll('.tab').forEach((x) => x.classList.remove('active'));
+        t.classList.add('active');
+      };
+    });
+  }
+  function showQrDialog(only) {
+    const inner = document.getElementById('qrDialogInner');
+    let html = '';
+    const list = only ? [only] : [1, 2];
+    let any = false;
+    list.forEach((i) => {
+      const url = cfg.brand['qr' + i];
+      if (!url) return;
+      any = true;
+      html += (i > 1 ? '<div style="height:10px"></div>' : '') +
+        '<img src="' + url + '" alt="qr' + i + '" />' +
+        (cfg.brand['qr' + i + 'Cap'] ? '<div class="cap">' + esc(cfg.brand['qr' + i + 'Cap']) + '</div>' : '');
+    });
+    if (!any) html = '<div class="ph">还没有设置二维码<br/>点左下角 ⚙ 上传</div>';
+    inner.innerHTML = html;
+    document.getElementById('qrDialog').classList.add('show');
+  }
+
+  /* ---------- 启动 ---------- */
+  function boot() {
+    buildRows();
+    buildUniRow();
+    bindAdjTable();
+    bindUI();
+    paintBrand();
+    syncForm();
+    connect();
+    setInterval(tick, 1000);
+    tick();
+    let rz = 0;
+    window.addEventListener('resize', function () {
+      clearTimeout(rz); rz = setTimeout(applyScale, 120);
+    });
+    setTimeout(function () { if (!state.ready) setConn('连接超时', false); }, 12000);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
+</body>
+</html>
